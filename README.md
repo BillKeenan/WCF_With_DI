@@ -1,13 +1,13 @@
-# Configuring WCF with StructureMap for Dependancy Injection [title]
+# Configuring WCF with StructureMap for Dependancy Injection 
 
 I’ve read a lot of articles on how to use Dependancy Injection with WCF, and I found most of them to be pretty inscrutable, it really started to seem like an unscalable problem.
 
 After a lot of futzing, a combination of articles lead me to look closer at servicehostfactory, and how it creates the service. Once I found the solution, it's actually pretty simple, and I don't understand why all the examples are so baffling.
 
-## Create a wcf Project [create]
+## Create a wcf Project 
 of course, nothing fancy
 
-## Create a class / interface that need to be injected [dependancy]
+## Create a class / interface that need to be injected 
 
 I've created a class and interface
     
@@ -20,17 +20,17 @@ I've put a simple method in Needed so we can see it working
 
 Here I've done some wiring up in the web.config so we have a JSON getenabled service, have a look for yourself. Fire up debug, and in your browser go to:
 
-*http://localhost:60203/Service1.svc/GetData
+* http://localhost:60203/Service1.svc/GetData
 
 Your port will likely be different of course
 
 Inside the ```GetWord``` method I'm simply instantiating Needed and calling GetWord so we can ensure everything is wired up.
 
-## First Commit[firstcommit]
+## First Commit
 
 * SHA: 4e70ccb43c017a0cb4bd51f0838460c8b87bab38
 
-## Create a custom Service Host[servicehost]
+## Create a custom Service Host
 
 This is pretty minimal, simply create a class extending ServiceHostFactory
 
@@ -70,12 +70,14 @@ There's a number of methods that you need to implement, but the only one that we
         return new Service1();
     }
 
-Here you can see I've only implemented it for Service1, which of course wont work in the long run, but at this point we can test that our service works, and that our factory works. Put a breakpoing on the MyInstanceProvider.GetInstance method and fire it up, the result should be the same as before, but you'll see the GetInstance method get called.
+Here you can see I've only implemented it for Service1, which of course wont work in the long run, but at this point we can test that our service works, and that our factory works. 
+
+Put a breakpoint on the MyInstanceProvider.GetInstance method and fire it up, the result should be the same as before, but you'll see the GetInstance method get called.
 
 ## Second Commit
 * SHA: f75dffa4b060fac850077f058528cf1133640551
 
-## Add iNeeded as a dependancy[Dependancy]
+## Add iNeeded as a dependancy
 
 Simply add it as a constructor parameter and set a field. 
 
@@ -89,7 +91,7 @@ At this point the project won't build, because of the constructor parameter, so 
 
 Fire it up, and we should be good.
 
-Now we have real dependancy injection happening with WCF! Here you could write a handler to inspect the type that was passed into MyInstanceProvider and do your own constructors, switching based on type, but we're going to use StructureMap.
+Now we have real dependancy injection happening with WCF! Now you could write a handler to inspect the type that was passed into MyInstanceProvider and do your own constructors, switching based on type, but we're going to use StructureMap.
 
 ## Configure StructureMap
 using nuget / Package manager console
@@ -103,14 +105,15 @@ Now in MyInstanceProvider we will use StructureMap to get the instance requested
 
     return ObjectFactory.GetInstance(_serviceType); 
 
-StructureMap is pretty simple to configure, if you run debug at this point it will blow up saying it has no default instance of Service1 configured.
+StructureMap is pretty simple to configure, if you run debug at this point it will blow up saying it has no default instance of INeeded configured.
 
 We're going to use the web.config to setup StructureMap
  
 ```xml
 <StructureMap MementoStyle="Attribute">
     <DefaultInstance PluginType="WcfWithDI.Interfaces.INeeded, WcfWithDI" PluggedType="WcfWithDI.Library.Needed, WcfWithDI"/>
-  </StructureMap>```
+  </StructureMap>
+```
 
 add it to your configSections of course
 
