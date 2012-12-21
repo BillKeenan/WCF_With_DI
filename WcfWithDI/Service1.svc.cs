@@ -1,15 +1,19 @@
-﻿using System;
-using WcfWithDI.Interfaces;
-using WcfWithDI.Library;
+﻿using WcfWithDI.Interfaces;
 
 namespace WcfWithDI
 {
     public class Service1 : IService1
     {
+        private INeeded _needed;
+
+        public Service1(INeeded needed)
+        {
+            _needed = needed;
+        }
+
         public string GetData()
         {
-            var needed = new Needed();
-            return needed.GetWord();
+            return _needed.GetWord();
         }
 
     }

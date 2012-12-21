@@ -9,12 +9,9 @@ of course, nothing fancy
 
 ## Create a class / interface that need to be injected [dependancy]
 
-I've created a class 
+I've created a class and interface
     
 	Needed.cs
-
-And interface
-
 	iNeeded.cs
 
 I've put a simple method in Needed so we can see it working
@@ -75,4 +72,65 @@ There's a number of methods that you need to implement, but the only one that we
 
 Here you can see I've only implemented it for Service1, which of course wont work in the long run, but at this point we can test that our service works, and that our factory works. Put a breakpoing on the MyInstanceProvider.GetInstance method and fire it up, the result should be the same as before, but you'll see the GetInstance method get called.
 
+## Second Commit
+* SHA: f75dffa4b060fac850077f058528cf1133640551
 
+## Add iNeeded as a dependancy[Dependancy]
+
+Simply add it as a constructor parameter and set a field. 
+
+    public Service1(INeeded needed)
+    {
+        _needed = needed;
+    }
+At this point the project won't build, because of the constructor parameter, so back in MyInstanceProvider, modify the line to inject needed
+
+     return new Service1(new Needed());
+
+Fire it up, and we should be good.
+
+Now we have real dependancy injection happening with WCF! Here you could write a handler to inspect the type that was passed into MyInstanceProvider and do your own constructors, switching based on type, but we're going to use StructureMap.
+
+## Configure StructureMap
+using nuget / Package manager console
+   
+    
+    PM> Install-Package structuremap
+    Successfully installed 'structuremap 2.6.4.1'.
+    Successfully added 'structuremap 2.6.4.1' to WcfWithDI.
+   
+Now in MyInstanceProvider we will use StructureMap to get the instance requested
+
+    return ObjectFactory.GetInstance(_serviceType); 
+
+StructureMap is pretty simple to configure, if you run debug at this point it will blow up saying it has no default instance of Service1 configured.
+
+We're going to use the web.config to setup StructureMap
+ 
+```xml
+<StructureMap MementoStyle="Attribute">
+    <DefaultInstance PluginType="WcfWithDI.Interfaces.INeeded, WcfWithDI" PluggedType="WcfWithDI.Library.Needed, WcfWithDI"/>
+  </StructureMap>```
+
+add it to your configSections of course
+
+```xml
+  <configSections>
+    <section name="StructureMap" type="StructureMap.Configuration.StructureMapConfigurationSection, StructureMap"/>
+  </configSections>
+```
+
+The last thing is to initialize structuremap, which we'll do in global.asax in Application_start
+
+     protected void Application_Start(object sender, EventArgs e)
+        {
+            ObjectFactory.Initialize(x =>
+            {
+                x.UseDefaultStructureMapConfigFile = false;
+                x.PullConfigurationFromAppConfig = true;
+            });
+        }
+
+And that's it, fire it up.
+
+The web.config is pretty big, If anyone knows lighter ways to configure WCF from there, i'd love to see it.
